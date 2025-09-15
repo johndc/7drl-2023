@@ -11,7 +11,7 @@ import { Popups } from './popups';
 import { Controller, TouchController, GamepadManager, KeyboardController, lastController } from './controllers';
 import { Rect as ButtonRect } from './controllers';
 import { HomeScreen, OptionsScreen, WinScreen, DeadScreen, StatsScreen, MansionCompleteScreen, HelpControls, HelpKey, DailyHubScreen, CreditsScreen, AchievementsScreen, DevScreen } from './ui'
-import { AmbienceType, Camera, GameMode, LevelStats, PersistedStats, ScoreEntry, State} from './types';
+import { AmbienceType, Camera, GameMode, LevelConfiguration, LevelStats, PersistedStats, ScoreEntry, State} from './types';
 
 import * as colorPreset from './color-preset';
 import { Achievements, getAchievements } from './achievements';
@@ -404,7 +404,7 @@ export function setupLevel(state: State, level: number) {
     state.popups.reset();
     state.activeSoundPool.empty();
     state.ambientSoundPool.empty();
-    state.gameMap = createGameMap(state.gameMapRoughPlans[state.level]);
+    state.gameMap = createGameMap(state.gameMapRoughPlans[state.level], state.levelConf);
     state.lightStates = new Array(state.gameMap.lightCount).fill(0);
     setLights(state.gameMap, state);
     setCellAnimations(state.gameMap, state);
@@ -3067,8 +3067,9 @@ export function saveStats(persistedStats: PersistedStats) {
 function initState(sounds:Howls, subtitledSounds: SubtitledHowls, activeSoundPool:ActiveHowlPool, ambientSoundPool:ActiveHowlPool, touchController:TouchController): State {
     const rng = new RNG();
     const initialLevel = debugInitialLevel;
+    const levelConf = new LevelConfiguration();
     const gameMapRoughPlans = createGameMapRoughPlans(gameConfig.numGameMaps, gameConfig.totalGameLoot, rng, debugForceLevelType);
-    const gameMap = createGameMap(gameMapRoughPlans[initialLevel]);
+    const gameMap = createGameMap(gameMapRoughPlans[initialLevel], levelConf);
     const stats = loadStats();
     let keyRepeatRate = parseInt(window.localStorage.getItem('LLL/keyRepeatRate')??'175');
     if(isNaN(keyRepeatRate)) keyRepeatRate = 175;
@@ -3166,6 +3167,7 @@ function initState(sounds:Howls, subtitledSounds: SubtitledHowls, activeSoundPoo
         lootAvailable: gameMapRoughPlans[initialLevel].totalLoot,
         treasureStolen: 0,
         gameMapRoughPlans: gameMapRoughPlans,
+        levelConf: levelConf,
         gameMap: gameMap,
         sounds: sounds,
         subtitledSounds: subtitledSounds,
@@ -3315,7 +3317,10 @@ export function restartGame(state: State) {
         timeStarted: Date.now(),
         timeEnded: 0,
     };
-    const gameMap = createGameMap(state.gameMapRoughPlans[state.level]);
+
+    const levelConf = new LevelConfiguration();
+    state.levelConf = levelConf;
+    const gameMap = createGameMap(state.gameMapRoughPlans[state.level],state.levelConf);
     state.player = new Player(gameMap.playerStartPos, isDailyRun);
     state.lightStates = Array(gameMap.lightCount).fill(0);
     setLights(gameMap, state);
@@ -3362,7 +3367,7 @@ export function startDailyGame(state: State) {
 }
 
 function resetState(state: State) {
-    const gameMap = createGameMap(state.gameMapRoughPlans[state.level]);
+    const gameMap = createGameMap(state.gameMapRoughPlans[state.level],state.levelConf);
     state.player = new Player(gameMap.playerStartPos, state.dailyRun !== null);
     state.lightStates = Array(gameMap.lightCount).fill(0);
     setLights(gameMap, state);

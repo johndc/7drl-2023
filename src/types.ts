@@ -8,7 +8,8 @@ import { TextWindow } from './ui';
 import { Animator } from './animation';
 import { Achievements } from './achievements';
 
-export {Camera, GameMode, GameStats, LevelStats, PersistedStats, State, ScoreEntry, AmbienceType}
+export {Camera, GameMode, GameStats, LevelStats, PersistedStats, State, ScoreEntry, AmbienceType,
+    LevelSizeConf, LevelFoodConf, LevelGuardsConf, LevelPatrolsConf, LevelConfiguration }
 
 type Camera = {
     position: vec2;
@@ -132,8 +133,73 @@ type FPSInfo = {
     msgFPS: string;
 }
 
+enum LevelSizeConf {
+    Normal = 10,
+    Bigger = 12,
+    Big = 15,
+    Huge = 20,
+    Giant = 50,
+
+    Count
+}
+
+enum LevelFoodConf {
+    None = 0,
+    Famine = 2,
+    Scarce = 5,
+    Normal = 10,
+    Plenty = 15,
+
+    Count
+}
+
+enum LevelGuardsConf {
+    Normal = 10,
+    More = 12,
+    Lot = 15,
+    Military = 20,
+
+    Count
+}
+
+enum LevelPatrolsConf {
+    Normal = 10,
+    More = 15,
+    Lot = 20,
+    Military = 40,
+
+    Count
+}
+
+class LevelConfiguration {
+    sizeConf: LevelSizeConf;
+    patrolsConf: LevelPatrolsConf;
+    guardsConf: LevelGuardsConf;
+    foodConf: LevelFoodConf;
+
+
+    constructor() {
+        this.sizeConf = LevelSizeConf.Normal;
+        this.patrolsConf = LevelPatrolsConf.Normal;
+        this.foodConf = LevelFoodConf.Normal;
+        this.guardsConf = LevelGuardsConf.Normal;
+    }
+
+    public static getConfMult(confValue: number): number {
+        return confValue / 10.0;
+    }
+
+    public calcTotalScoreMult() : number {
+        return LevelConfiguration.getConfMult(this.sizeConf) * 
+        LevelConfiguration.getConfMult(this.foodConf) * 
+        LevelConfiguration.getConfMult(this.guardsConf) * 
+        LevelConfiguration.getConfMult(this.patrolsConf);
+    }
+}
+
 type State = {
     gameStats: GameStats;
+    levelConf: LevelConfiguration;
     persistedStats: PersistedStats;
     levelStats: LevelStats;
     achievements: Achievements;

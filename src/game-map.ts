@@ -26,6 +26,7 @@ import { vec2 } from './my-matrix';
 import { Animator, LightSourceAnimation, RadialAnimation, SpriteAnimation } from './animation';
 import { RNG } from './random';
 import { Adjacency } from './create-map';
+import { LevelConfiguration } from './types';
 
 
 const cardinalDirections: Array<vec2> = [

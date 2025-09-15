@@ -4,24 +4,43 @@ import { BooleanGrid, CellGrid, Int32Grid, Item, ItemType, Float64Grid, GameMap,
 import { Guard } from './guard';
 import { vec2 } from './my-matrix';
 import { RNG } from './random';
+import { LevelSizeConf, LevelFoodConf, LevelGuardsConf, LevelPatrolsConf, LevelConfiguration } from './types';
 
 const roomSizeX = 5;
 const roomSizeY = 5;
 const outerBorder = 2;
 const outerBorderBottom = 3;
 
-const levelShapeInfo:Array<[number,number,number,number,number,number]> = [
+const levelShapeInfo:Array<[number,number,number,number,number,number,
+    LevelSizeConf, LevelFoodConf, LevelGuardsConf, LevelPatrolsConf 
+]> = [
     //xmin,xmax,ymin,ymax,areamin,areamax -- params used to constrain the map size
-    [3,3,2,2,6,6],
-    [3,5,2,5,6,12],
-    [3,5,2,6,9,15],
-    [3,5,2,6,12,18],
-    [3,7,3,6,15,21],
-    [3,7,3,6,18,24],
-    [3,7,3,6,21,30],
-    [5,7,4,6,24,36],
-    [5,9,4,6,30,42],
-    [7,9,5,9,35,63],
+    [3,3,2,2,6,6, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal],
+    [3,5,2,5,6,12, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal],
+    [3,5,2,6,9,15, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal],
+    [3,5,2,6,12,18, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal],
+    [3,7,3,6,15,21, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal],
+    [3,7,3,6,18,24, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal],
+    [3,7,3,6,21,30, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal],
+    [5,7,4,6,24,36, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal],
+    [5,9,4,6,30,42, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal],
+    [7,9,5,9,35,63, LevelSizeConf.Normal, LevelFoodConf.Normal, LevelGuardsConf.Normal, LevelPatrolsConf.Normal]
+];
+
+const levelCampShapeInfo:Array<[number,number,number,number,number,number, 
+   LevelSizeConf, LevelFoodConf, LevelGuardsConf, LevelPatrolsConf 
+]> = [
+    //xmin,xmax,ymin,ymax,areamin,areamax, levelConfiguration -- params used to constrain the map size
+    [3,3,2,2,6,6, LevelSizeConf.Huge, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More],
+    [3,5,2,5,6,12, LevelSizeConf.Normal, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More],
+    [3,5,2,6,9,15, LevelSizeConf.Normal, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More],
+    [3,5,2,6,12,18, LevelSizeConf.Normal, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More],
+    [3,7,3,6,15,21, LevelSizeConf.Normal, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More],
+    [3,7,3,6,18,24, LevelSizeConf.Normal, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More],
+    [3,7,3,6,21,30, LevelSizeConf.Normal, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More],
+    [5,7,4,6,24,36, LevelSizeConf.Normal, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More],
+    [5,9,4,6,30,42, LevelSizeConf.Normal, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More],
+    [7,9,5,9,35,63, LevelSizeConf.Big, LevelFoodConf.Famine, LevelGuardsConf.Lot, LevelPatrolsConf.More]
 ];
 
 enum RoomType {
@@ -143,17 +162,22 @@ function createGameMapRoughPlans(numMaps: number, totalLoot: number, rng: RNG, f
         } else {
             levelTypeManor = (rng.random() < 0.5) ? LevelType.Manor : LevelType.ManorRed;
         }
-
-        const [numRoomsX, numRoomsY] = makeLevelSize(level, levelType, levelRNG);
+        //jdc bf
+        //const [numRoomsX, numRoomsY] = makeLevelSize(level, levelType, levelRNG);
+        levelType = LevelType.Fortress;
+        let iLevel = (level < 4) ? 4 : 4;
+        iLevel = 9;
+        const [numRoomsX, numRoomsY] = makeLevelSize(iLevel, 1.3, levelType, levelRNG);
 
         gameMapRoughPlans.push({
             levelType: levelType,
-            level: level,
+            level: iLevel,
             numRoomsX: numRoomsX,
             numRoomsY: numRoomsY,
             totalLoot: 0,
             rng: levelRNG,
             played: false,
+
         });
     }
 
@@ -184,13 +208,13 @@ function createGameMapRoughPlans(numMaps: number, totalLoot: number, rng: RNG, f
     for (let i = 0; i < gameMapRoughPlans.length; ++i) {
         const plan = gameMapRoughPlans[i];
         console.log('Level %d: %dx%d rooms, %d gold, %s', i, plan.numRoomsX, plan.numRoomsY, plan.totalLoot, levelTypeName(plan.levelType));
-    }
-    */
+    }*/
+    
 
     return gameMapRoughPlans;
 }
 
-function makeLevelSize(level: number, levelType: LevelType, rng: RNG) : [number, number] {
+function makeLevelSize(level: number, levelSizeMult: number, levelType: LevelType, rng: RNG) : [number, number] {
     let xmin: number, xmax: number, ymin: number, ymax: number, Amin: number, Amax: number;
     [xmin, xmax, ymin, ymax, Amin, Amax] = levelShapeInfo[level];
 
@@ -225,6 +249,10 @@ function makeLevelSize(level: number, levelType: LevelType, rng: RNG) : [number,
     y = Math.min(Math.floor(Amax/x), y);
     y = Math.max(y, Math.ceil(Amin/x));
 
+    //jdc bf
+    x= Math.floor(x*levelSizeMult);
+    y= Math.floor(y*levelSizeMult);
+
     // Quantize mansion dimensions to work with its style
 
     if (levelType === LevelType.Mansion) {
@@ -243,20 +271,23 @@ function makeLevelSize(level: number, levelType: LevelType, rng: RNG) : [number,
     return [x,y];
 }
 
-function createGameMap(plan: GameMapRoughPlan): GameMap {
+function createGameMap(plan: GameMapRoughPlan, levelConf: LevelConfiguration): GameMap {
     const rng = plan.rng;
     rng.reset();
+    
+    //jdc bf: apply level configuration
+    const [numRoomsX, numRoomsY] = makeLevelSize(plan.level, LevelConfiguration.getConfMult(levelConf.sizeConf), plan.levelType,plan.rng);
 
     const level = plan.level;
     const levelType = plan.levelType;
 
     if (levelType === LevelType.Warrens) {
-        return makeWarrens(level, plan.numRoomsX, plan.numRoomsY, plan.totalLoot, rng);
+        return makeWarrens(level, numRoomsX, numRoomsY, plan.totalLoot, rng);
     }
 
     // Designate rooms as interior or courtyard
 
-    const inside = new BooleanGrid(plan.numRoomsX, plan.numRoomsY, true);
+    const inside = new BooleanGrid(numRoomsX, numRoomsY, true);
 
     switch (levelType) {
     case LevelType.Manor:
@@ -273,7 +304,7 @@ function createGameMap(plan: GameMapRoughPlan): GameMap {
         break;
     }
 
-    /*
+
     console.log('Finished grid:');
     for (let y = inside.sizeY - 1; y >= 0; --y) {
         let s: string = y.toString() + ': ';
@@ -282,7 +313,7 @@ function createGameMap(plan: GameMapRoughPlan): GameMap {
         }
         console.log(s);
     }
-    */
+
 
     // Randomly offset walls, and establish mirror relationships between them
 
@@ -298,8 +329,8 @@ function createGameMap(plan: GameMapRoughPlan): GameMap {
     const roomVarianceY = 3;
 
     const [offsetX, offsetY] = offsetWalls(
-        plan.numRoomsX,
-        plan.numRoomsY,
+        numRoomsX,
+        numRoomsY,
         roomSizeX,
         roomSizeY,
         roomVarianceX,
@@ -314,12 +345,12 @@ function createGameMap(plan: GameMapRoughPlan): GameMap {
 
     // Enforce symmetry by mirroring wall offsets from one side to the other
 
-    const mirrorRoomsX = (plan.numRoomsX & 1) === 1 && insideIsHorizontallySymmetric(inside);
+    const mirrorRoomsX = (numRoomsX & 1) === 1 && insideIsHorizontallySymmetric(inside);
     if (mirrorRoomsX) {
         mirrorOffsetsLeftToRight(offsetX, offsetY);
     }
 
-    const mirrorRoomsY = (plan.numRoomsY & 1) === 1 && insideIsVerticallySymmetric(inside) && (!mirrorRoomsX || Math.random() < 0.5);
+    const mirrorRoomsY = (numRoomsY & 1) === 1 && insideIsVerticallySymmetric(inside) && (!mirrorRoomsX || Math.random() < 0.5);
     if (mirrorRoomsY) {
         mirrorOffsetsBottomToTop(offsetX, offsetY);
     }
@@ -594,12 +625,20 @@ function makeMansionRoomGrid(inside: BooleanGrid, rng: RNG) {
 
 function makeFortressRoomGrid(inside: BooleanGrid, rng: RNG) {
     const ringCourtyard = rng.random() < 0.25;
+
+    //jdc bf
+    const ring1 = (rng.random() < 0.5) ? 1 : 2;
+    const ring2 = ring1 + ((rng.random() < 0.5) ? 2 : 3);
+
     for (let x = 0; x < inside.sizeX; ++x) {
         for (let y = 0; y < inside.sizeY; ++y) {
             const dx = Math.min(x, (inside.sizeX - 1) - x);
             const dy = Math.min(y, (inside.sizeY - 1) - y);
             const d = Math.min(dx, dy);
-            inside.set(x, y, d !== 1 || (!ringCourtyard && y > 1 && dx !== 1));
+            //inside.set(x, y, d !== 1 || (!ringCourtyard && y > 1 && dx !== 1));
+
+            inside.set(x, y, d !== ring1 && d !== ring2);
+
         }
     }
 }

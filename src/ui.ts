@@ -881,6 +881,38 @@ requirements when you complete a game.
     }
 }
 
+class LevelInfoSreen extends TextWindow {
+    pages = [
+        `$levelType$ Looted! ($level$/$numLevels$)
+
+        \x9a\x9b Size:        $levelSizeConf$
+        \x86\x87 Food:        $levelFoodConf$
+        \x84\x85 Guards:      $levelGuardConf$
+        \x84\x85 Patrols:      $levelPatrolsConf$
+
+        \x82\x83 Loot multiplier:  $levelTotalConf$
+
+        [N|startLevel]: Next`
+    ];
+    update(state:State) {
+        this.state.set('level', (state.level+1).toString());
+        this.state.set('levelType', levelTypeName(state.gameMapRoughPlans[state.level].levelType));
+        this.state.set('numLevels', state.gameMapRoughPlans.length.toString());
+
+        this.state.set('levelTotalConf', state.levelConf.calcTotalScoreMult().toString());
+    }
+    onControls(state:State, activated:(action:string)=>boolean) {
+        const action = this.navigateUI(activated);
+        if (activated('startLevel') || action=='startLevel') {
+            if (state.level >= state.gameMapRoughPlans.length - 1) {
+                game.advanceToWin(state);
+            } else {
+                game.setupLevel(state, state.level + 1);
+            }
+        }
+    }
+}
+
 class MansionCompleteScreen extends TextWindow {
     pages = [
 `$levelType$ Looted! ($level$/$numLevels$)
@@ -891,6 +923,7 @@ class MansionCompleteScreen extends TextWindow {
 \x84\x85 Total:       $levelScore$
 
 \x82\x83 Cumulative:  $totalScore$
+\x82\x83 Guards:  $totalGuards$
 
 [N|startLevel]: Next`
     ];
@@ -903,6 +936,7 @@ class MansionCompleteScreen extends TextWindow {
         const ghosted = state.levelStats.numSpottings === 0;
         const ghostBonus = ghosted ? lootScore : 0;
         const score = lootScore + treasureScore + foodScore + timeBonus + ghostBonus;
+        const totalGuards = state.gameMap.guards.length;
 
         this.state.set('levelType', levelTypeName(state.gameMapRoughPlans[state.level].levelType));
         this.state.set('level', (state.level+1).toString());
@@ -914,6 +948,7 @@ class MansionCompleteScreen extends TextWindow {
         this.state.set('ghostBonus', ghostBonus.toString());
         this.state.set('levelScore', score.toString());
         this.state.set('totalScore', state.gameStats.totalScore.toString());
+        this.state.set('totalGuards', totalGuards.toString());
     }
     onControls(state:State, activated:(action:string)=>boolean) {
         const action = this.navigateUI(activated);
