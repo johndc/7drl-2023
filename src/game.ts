@@ -593,7 +593,8 @@ function collectLoot(state: State, pos: vec2, posFlyToward: vec2): boolean {
             for (const treasureInfo of state.gameMap.treasures) {
                 if (treasureInfo.posTreasure.equals(item.pos)) {
                     treasureInfo.stolen = true;
-                    if (state.gameMapRoughPlans[state.level].levelType === LevelType.Fortress) {
+                    if (state.gameMapRoughPlans[state.level].levelType === LevelType.Fortress &&
+                        state.level === state.gameMapRoughPlans.length - 1) {
                         makeNoise(state.gameMap, state.player, state.popups, NoiseType.Alarm, 
                             pos[0]-state.player.pos[0], pos[1]-state.player.pos[1], state.sounds, 46, true);
                     }
@@ -2283,7 +2284,7 @@ export function postTurn(state: State) {
     }
 
     const numTurnsPar = numTurnsParForCurrentMap(state);
-    if (state.turns === Math.floor(0.75*numTurnsPar) || state.turns === numTurnsPar-10 && numTurnsPar>100) {
+    if (state.level > 0 && (state.turns === Math.floor(0.75*numTurnsPar) || state.turns === numTurnsPar-10 && numTurnsPar>100)) {
         state.popups.setNotification('\x8c\x8dTick tock!', state.player, 3, 5.0);
         state.sounds.clockTick.play(1.0);
     }
@@ -2308,7 +2309,7 @@ export function postTurn(state: State) {
             state.popups.setNotification('\x8c\x8dLate!\nVaults were cleared.', state.player, 3, 5.0);
             state.sounds.coinRattle.play(1.0);
             state.sounds.clockChime.play(0.5);
-        } else {
+        } else if (state.level > 0) {
             state.popups.setNotification('\x8c\x8dLate!', state.player, 3, 5.0);
             state.sounds.clockChime.play(1.0);
         }
@@ -2589,58 +2590,43 @@ function renderItems(state: State, renderer: Renderer, topLayer: boolean) {
 }
 
 function renderRoomAdjacencies(rooms: Array<Rect>, adjacencies: Array<Adjacency>, renderer: Renderer) {
-    const tile = {
-        textureIndex: 4,
-        color: 0xb0a0a0ff,
-        unlitColor: 0xffffffff
-    };
-    const tile2 = {
-        textureIndex: 4,
-        color: 0xb0ffffff,
-        unlitColor: 0xffffffff
-    };
+    const tileRoom = { textureIndex: 4, color: 0xffffffff, unlitColor: 0xffffffff };
+    const tileWall = { textureIndex: 4, color: 0xff4040ff, unlitColor: 0xffffffff };
+    const tileDoor = { textureIndex: 4, color: 0xffffffff, unlitColor: 0xffffffff };
 
-    const roomTile = {
-        textureIndex: 4,
-        color: 0x80a0a0a0,
-        unlitColor: 0xffffffff
-    }
-
-    const r = 1 / 8;
+    const r = 1 / 16;
 
     for (const room of rooms) {
         const x0 = room.posMin[0];
         const y0 = room.posMin[1];
         const x1 = room.posMax[0];
         const y1 = room.posMax[1];
-        renderer.addGlyph(x0,     y0,     x1,     y0 + r, roomTile);
-        renderer.addGlyph(x0,     y1 - r, x1,     y1,     roomTile);
-        renderer.addGlyph(x0,     y0 + r, x0 + r, y1 - r, roomTile);
-        renderer.addGlyph(x1 - r, y0 + r, x1,     y1 - r, roomTile);
+        renderer.addGlyph(x0,     y0,     x1,     y0 + r, tileRoom);
+        renderer.addGlyph(x0,     y1 - r, x1,     y1,     tileRoom);
+        renderer.addGlyph(x0,     y0 + r, x0 + r, y1 - r, tileRoom);
+        renderer.addGlyph(x1 - r, y0 + r, x1,     y1 - r, tileRoom);
     }
 
     for (const adj of adjacencies) {
-        const x0 = adj.origin[0];
-        const y0 = adj.origin[1];
-        const x1 = adj.origin[0] + adj.dir[0] * adj.length;
-        const y1 = adj.origin[1] + adj.dir[1] * adj.length;
-        renderer.addGlyph(x0 + 0.25, y0 + 0.25, x0 + 0.75, y0 + 0.75, tile);
-        renderer.addGlyph(x1 + 0.25, y1 + 0.25, x1 + 0.75, y1 + 0.75, tile);
-    }
+        const p0x = 0.5 + adj.origin[0];
+        const p0y = 0.5 + adj.origin[1];
+        const p1x = p0x + adj.dir[0] * adj.length;
+        const p1y = p0y + adj.dir[1] * adj.length;
 
-    for (const adj of adjacencies) {
-        const p0x = adj.origin[0] + 0.5;
-        const p0y = adj.origin[1] + 0.5;
-        const p1x = adj.origin[0] + adj.dir[0] * adj.length + 0.5;
-        const p1y = adj.origin[1] + adj.dir[1] * adj.length + 0.5;
+        const dx = Math.abs(adj.dir[0]) * (1 - r);
+        const dy = Math.abs(adj.dir[1]) * (1 - r);
 
-        const r = 0.1;
-        const x0 = Math.min(p0x, p1x) - r + Math.abs(adj.dir[0]) *  0.5;
-        const y0 = Math.min(p0y, p1y) - r + Math.abs(adj.dir[1]) *  0.5;
-        const x1 = Math.max(p0x, p1x) + r + Math.abs(adj.dir[0]) * -0.5;
-        const y1 = Math.max(p0y, p1y) + r + Math.abs(adj.dir[1]) * -0.5;
+        const x0 = Math.min(p0x, p1x) + dx - (0.5 - r);
+        const y0 = Math.min(p0y, p1y) + dy - (0.5 - r);
+        const x1 = Math.max(p0x, p1x) - dx + (0.5 - r);
+        const y1 = Math.max(p0y, p1y) - dy + (0.5 - r);
 
-        renderer.addGlyph(x0, y0, x1, y1, adj.door ? tile2 : tile);
+        const tile = adj.door ? tileDoor : tileWall;
+
+        renderer.addGlyph(x0,     y0,     x1,     y0 + r, tile);
+        renderer.addGlyph(x0,     y1 - r, x1,     y1,     tile);
+        renderer.addGlyph(x0,     y0 + r, x0 + r, y1 - r, tile);
+        renderer.addGlyph(x1 - r, y0 + r, x1,     y1 - r, tile);
     }
 }
 
@@ -4228,6 +4214,28 @@ function renderBottomStatusBar(renderer: Renderer, screenSize: vec2, state: Stat
 
     renderer.addGlyph(0, 0, screenSizeInTilesX, 1, fontTileSet.background);
 
+    // Compute center status-bar content and length: Level number, turn count, and speed bonus
+
+    const msgLevel = (state.dailyRun ? '\x7fDaily Lvl ' : '\x7fLvl ') + (state.level + 1);
+
+    const parTurns = numTurnsParForCurrentMap(state);
+    let msgTimer = '\x8c\x8d' + state.turns + '/' + parTurns;
+    const colorTimer = state.turns>parTurns? colorPreset.lightRed : 
+                       state.turns>0.75*parTurns? colorPreset.lightYellow :
+                       colorPreset.lightGreen;
+
+    const ghosted = state.levelStats.numSpottings === 0;
+    if (!ghosted) {
+        msgTimer += '!';
+    }
+
+    const msgFPS = state.fpsInfo.enabled ? state.fpsInfo.msgFPS : '';
+
+    const pad = state.fpsInfo.enabled ? 2 : 1;
+    const centerLength = msgLevel.length + msgTimer.length + msgFPS.length + pad;
+
+    // Fill in left-justified part of status bar
+
     let leftSideX = 1;
 
     const playerUnderwater = state.gameMap.cells.atVec(state.player.pos).type == TerrainType.GroundWater && state.player.turnsRemainingUnderwater > 0;
@@ -4260,59 +4268,60 @@ function renderBottomStatusBar(renderer: Renderer, screenSize: vec2, state: Stat
     if (state.leapToggleActive) {
         putString(renderer, leftSideX, msgLeapToggle, colorPreset.lightGreen);
     }
-    leftSideX += msgLeapToggle.length;
+
+    // Set the leftSideX to a fixed value so if the health meter is animating it doesn't affect the center or right sections
+
+    leftSideX = state.player.healthMax + msgLeapToggle.length + 2;
+
+    // Fill in right-justified part of status bar
 
     let rightSideX = screenSizeInTilesX;
 
     const percentRevealed = Math.floor(state.gameMap.fractionRevealed() * 100);
-    if (percentRevealed < 100) {
-        // Mapping percentage
 
-        let msgSeen = '\x8e\x8fMap ' + percentRevealed + '%';
-        rightSideX -= msgSeen.length + 1;
-        putString(renderer, rightSideX, msgSeen, colorPreset.white);
-    } else if (state.lootStolen < state.lootAvailable || state.gameMode !== GameMode.Mansion) {
-        // Total loot
+    const msgKey = state.player.hasVaultKey ? '\x8aKey ' : '';
+    let msgSeen = '\x8e\x8fMap ' + percentRevealed + '% ';
+    let msgLoot = '\x8bLoot ' + state.lootStolen + '/' + ((percentRevealed < 100) ? '?' : state.lootAvailable) + ' ';
+    let msgEscape = (state.finishedLevel && state.player.health > 0 && state.gameMode === GameMode.Mansion) ? '\x88\x89Escape! ' : '';
 
-        let msgLoot = '\x8bLoot ' + state.lootStolen + '/' + state.lootAvailable;
-        rightSideX -= msgLoot.length + 1;
-        putString(renderer, rightSideX, msgLoot, colorPreset.lightMagenta);
-    } else {
-        // Leave map
+    // Knock out loot and/or seen messages if there is not enough room on the status bar
 
-        let msg = '\x88\x89Escape!';
-        rightSideX -= msg.length + 1;
-        putString(renderer, rightSideX, msg, colorPreset.white);
+    const spaceAvailable = rightSideX - (leftSideX + centerLength + msgKey.length + 1);
+
+    if (msgSeen.length + msgLoot.length + msgEscape.length > spaceAvailable) {
+        if (percentRevealed < 100) {
+            msgLoot = '';
+        } else {
+            msgSeen = '';
+        }
     }
 
-    // Key possession
-
-    const msgKey = '\x8aKey';
-    if (state.player.hasVaultKey) {
-        rightSideX -= msgKey.length + 1;
-        putString(renderer, rightSideX, msgKey, colorPreset.lightCyan);
+    if (msgSeen.length + msgLoot.length + msgEscape.length > spaceAvailable) {
+        msgLoot = '';
+        msgSeen = '';
     }
 
-    // Level number, turn count, and speed bonus
-    const msgFPS = state.fpsInfo.enabled ? state.fpsInfo.msgFPS : '';
-
-    const msgLevel = (state.dailyRun ? '\x7fDaily Lvl ' : '\x7fLvl ') + (state.level + 1);
-
-    const parTurns = numTurnsParForCurrentMap(state);
-    let msgTimer = '\x8c\x8d' + state.turns + '/' + parTurns;
-    const colorTimer = state.turns>parTurns? colorPreset.lightRed : 
-                       state.turns>0.75*parTurns? colorPreset.lightYellow :
-                       colorPreset.lightGreen;
-
-    const ghosted = state.levelStats.numSpottings === 0;
-    if (!ghosted) {
-        msgTimer += '!';
+    if (msgSeen.length + msgLoot.length + msgEscape.length > spaceAvailable) {
+        msgEscape = '';
     }
 
-    leftSideX = state.player.healthMax + msgLeapToggle.length + 2;
+    // Display all of the right-aligned status messages
 
-    const pad = state.fpsInfo.enabled ? 2 : 1
-    const centeredX = (leftSideX + rightSideX - (msgLevel.length + msgTimer.length + msgFPS.length + pad)) / 2;
+    rightSideX -= msgLoot.length;
+    putString(renderer, rightSideX, msgLoot, colorPreset.lightMagenta);
+
+    rightSideX -= msgSeen.length;
+    putString(renderer, rightSideX, msgSeen, colorPreset.white);
+
+    rightSideX -= msgKey.length;
+    putString(renderer, rightSideX, msgKey, colorPreset.lightCyan);
+
+    rightSideX -= msgEscape.length;
+    putString(renderer, rightSideX, msgEscape, colorPreset.white);
+
+    // Place centered part of status bar
+
+    const centeredX = (leftSideX + rightSideX - centerLength) / 2;
     putString(renderer, centeredX, msgLevel, colorPreset.lightGray);
     putString(renderer, centeredX + msgLevel.length + 1, msgTimer, colorTimer);
     if(msgFPS!=='') {

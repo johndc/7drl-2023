@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <style>
-html, body {
-  height: 100%;
+html {
+  min-height: calc(100% + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  background-color: #101010;
+}
+body {
   margin: 0;
-  background-color: #222;
-  font-family: arial;
+  font-family: Helvetica;
+  font-size: 12pt;
+  -webkit-text-size-adjust: 100%;
+  position: fixed;
+  top: env(safe-area-inset-top);
+  left: env(safe-area-inset-left);
+  right: env(safe-area-inset-right);
+  bottom: env(safe-area-inset-bottom);
 }
 canvas {
   width: 100%;
@@ -37,7 +47,9 @@ canvas {
 <link rel="icon" type="image/ico" href="favicon.ico"/>
 <link rel="manifest" href="./manifest.json">
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>LLLOOOT!</title>
 </head>
 <body>
